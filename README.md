@@ -1,7 +1,7 @@
 # nbzinbWebster
 
 <!-- badges: start -->
-<!-- CI badge placeholder: the R-CMD-check badge goes here. -->
+[![R-CMD-check](https://github.com/webfam564/nbzinbWebster/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/webfam564/nbzinbWebster/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 **nbzinbWebster** fits negative binomial (NB2) and zero-inflated negative
