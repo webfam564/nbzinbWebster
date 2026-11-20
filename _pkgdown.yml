@@ -1,0 +1,32 @@
+url: https://webfam564.github.io/nbzinbWebster/
+template:
+  bootstrap: 5
+
+destination: docs
+
+reference:
+  - title: Negative binomial regression
+    contents:
+      - nbreg
+      - nbreg_control
+      - nbreg-methods
+  - title: Zero-inflated negative binomial regression
+    contents:
+      - zinbreg
+      - zinbreg_control
+      - zinbreg-methods
+
+articles:
+  - title: Report
+    navbar: ~
+    contents:
+      - articles/report
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Report
+      href: articles/report.html

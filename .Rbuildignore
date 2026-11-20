@@ -7,3 +7,6 @@
 ^vignettes/articles$
 ^report$
 ^\.github$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

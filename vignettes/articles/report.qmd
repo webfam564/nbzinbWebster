@@ -15,16 +15,15 @@ abstract: |
   required tolerances. A simulation study shows that `zinbreg()` recovers
   known parameters with near-nominal Wald coverage. An analysis of physician
   office visits in the NMES1988 data favors the ZINB model.
+# Only html is listed under `format`, because pkgdown renders every listed
+# format. The PDF is made with `quarto render ... --to pdf`, which uses the
+# top-level options below (geometry and colorlinks only affect LaTeX).
+number-sections: true
+geometry: margin=1in
+colorlinks: true
 format:
   html:
     toc: true
-    number-sections: true
-  pdf:
-    toc: false
-    number-sections: true
-    colorlinks: true
-    geometry: margin=1in
-    fontsize: 11pt
 execute:
   echo: false
   warning: false
