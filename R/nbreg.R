@@ -58,12 +58,6 @@ nbreg_control <- function(tol = 1e-8, maxit = 100,
                           nr_tol = 1e-10, nr_maxit = 100,
                           theta_max = 1e8, theta_warn = 1e4,
                           trace = FALSE) {
-  check_pos <- function(x, name) {
-    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
-      stop(sprintf("'%s' must be a single positive number.", name),
-           call. = FALSE)
-    }
-  }
   check_pos(tol, "tol")
   check_pos(irls_tol, "irls_tol")
   check_pos(nr_tol, "nr_tol")
@@ -72,9 +66,7 @@ nbreg_control <- function(tol = 1e-8, maxit = 100,
   check_pos(maxit, "maxit")
   check_pos(irls_maxit, "irls_maxit")
   check_pos(nr_maxit, "nr_maxit")
-  if (!is.logical(trace) || length(trace) != 1L || is.na(trace)) {
-    stop("'trace' must be TRUE or FALSE.", call. = FALSE)
-  }
+  check_flag(trace, "trace")
   list(tol = tol, maxit = as.integer(maxit),
        irls_tol = irls_tol, irls_maxit = as.integer(irls_maxit),
        nr_tol = nr_tol, nr_maxit = as.integer(nr_maxit),
@@ -486,15 +478,20 @@ nb_theta_nr <- function(y, mu, a, theta, control) {
 # Observations with a_i = 0 are dropped so that they cannot produce NaN.
 nb_loglik <- function(y, mu, theta, a) {
   keep <- a > 0
-  y <- y[keep]; mu <- mu[keep]; a <- a[keep]
+  sum(a[keep] * nb_logf(y[keep], mu[keep], theta))
+}
+
+# Per-observation NB log-density log f_NB(y_i; mu_i, theta), the bracketed
+# term of the log-likelihood above (Poisson log-density if theta = Inf).
+# Also used by the ZINB log-likelihood.
+nb_logf <- function(y, mu, theta) {
   # y log(mu) is 0 when y = 0 (even if mu underflows to 0).
   ylogmu <- ifelse(y > 0, y * log(mu), 0)
   if (is.infinite(theta)) {
-    return(sum(a * (ylogmu - mu - lgamma(y + 1))))
+    return(ylogmu - mu - lgamma(y + 1))
   }
-  sum(a * (lgamma(y + theta) - lgamma(theta) - lgamma(y + 1) +
-             theta * log(theta) + ylogmu -
-             (theta + y) * log(theta + mu)))
+  lgamma(y + theta) - lgamma(theta) - lgamma(y + 1) +
+    theta * log(theta) + ylogmu - (theta + y) * log(theta + mu)
 }
 
 # Score in theta (Section 3.1 (b)):
