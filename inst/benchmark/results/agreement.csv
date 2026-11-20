@@ -1,0 +1,17 @@
+"dataset","model","quantity","max_abs_diff","tolerance","pass"
+"bioChemists","NB","Coefficients",3.35742094681457e-08,1e-05,TRUE
+"bioChemists","NB","Standard errors",1.26233629105243e-09,1e-05,TRUE
+"bioChemists","NB","theta",8.43418987983569e-08,1e-04,TRUE
+"bioChemists","NB","Log-likelihood",2.27373675443232e-13,1e-04,TRUE
+"bioChemists","ZINB","Coefficients",0.000151226213167321,0.001,TRUE
+"bioChemists","ZINB","Standard errors",9.44288411035554e-05,0.001,TRUE
+"bioChemists","ZINB","log(theta)",1.28439102329292e-05,0.001,TRUE
+"bioChemists","ZINB","Log-likelihood",4.24122390541015e-08,0.001,TRUE
+"NMES1988","NB","Coefficients",3.64715534162396e-08,1e-05,TRUE
+"NMES1988","NB","Standard errors",1.71658152969822e-10,1e-05,TRUE
+"NMES1988","NB","theta",5.21232323968945e-09,1e-04,TRUE
+"NMES1988","NB","Log-likelihood",0,1e-04,TRUE
+"NMES1988","ZINB","Coefficients",2.62932652248526e-05,0.001,TRUE
+"NMES1988","ZINB","Standard errors",1.7303060124485e-05,0.001,TRUE
+"NMES1988","ZINB","log(theta)",4.348213309191e-06,0.001,TRUE
+"NMES1988","ZINB","Log-likelihood",1.59870978677645e-08,0.001,TRUE

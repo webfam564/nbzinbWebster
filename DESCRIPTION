@@ -11,6 +11,7 @@ Roxygen: list(markdown = TRUE)
 Imports:
     stats
 Suggests:
+    AER,
     MASS,
     numDeriv,
     pscl,

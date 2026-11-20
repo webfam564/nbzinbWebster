@@ -1,0 +1,5 @@
+"dataset","model","ours","reference","seconds_ours","seconds_reference","reps","iterations","converged","loglik_ours","loglik_reference"
+"bioChemists","NB","nbreg","MASS::glm.nb",0.03,0.07,10,4,TRUE,-1560.95833849648,-1560.95833849648
+"bioChemists","ZINB","zinbreg","pscl::zeroinfl",1.79,0.25,3,111,TRUE,-1549.99088708902,-1549.99088704661
+"NMES1988","NB","nbreg","MASS::glm.nb",0.0999999999999996,0.220000000000001,10,4,TRUE,-12170.5535979668,-12170.5535979668
+"NMES1988","ZINB","zinbreg","pscl::zeroinfl",3.81,1.12,3,53,TRUE,-12090.7220123036,-12090.7220122876
