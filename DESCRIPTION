@@ -8,6 +8,8 @@ License: MIT + file LICENSE
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 3.5)
 Imports:
     stats
 Suggests:
