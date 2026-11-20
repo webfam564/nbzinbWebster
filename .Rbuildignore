@@ -4,3 +4,4 @@
 ^project-docs$
 ^\.claude$
 ^LICENSE\.md$
+^vignettes/articles$
