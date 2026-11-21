@@ -88,12 +88,6 @@ fits both models *with algorithms written from scratch*:
 * no calls to `optim()`, `nlm()`, `glm()`, `lm()`, or any other optimizer or
   model-fitting routine in the fitting code.
 
-The rest of the report describes the methods (Section 2) and the package
-(Section 3). It then checks the package against the reference
-implementations (Section 4), evaluates `zinbreg()` by simulation
-(Section 5), and analyzes physician office visits in the NMES1988 data
-(Section 6).
-
 # Methods
 
 ## The negative binomial model
@@ -256,8 +250,7 @@ come from an NB fit, and the starting value for $\gamma$ comes from an IRLS
 logistic regression of $I(y_i = 0)$ on $z_i$. EM stops when the
 observed-data log-likelihood @eq-zinb-ll changes by less than $10^{-8}$.
 EM can never decrease $\ell$ [@dempster1977], so the package stores the
-whole log-likelihood path and warns if it ever goes down. This check was a
-useful debugging tool during development.
+whole log-likelihood path and warns if it ever goes down.
 
 **Standard errors.** EM does not produce standard errors, so we invert the
 observed information matrix of @eq-zinb-ll with respect to
@@ -292,11 +285,9 @@ machinery, so `data`, `subset`, `weights`, `offset` and `na.action` behave
 as in `glm()`. `zinbreg()` accepts the two-part formula
 `y ~ x1 + x2 | z1 + z2` (count covariates before the bar, zero covariates
 after it). Without a bar, the same covariates are used in both parts, as in
-`zeroinfl()`. The numerical work is done by internal functions that work
-directly on model matrices: `nb_fit()`, `nb_irls()`, `nb_theta_nr()`,
-`zinb_fit()`, `logit_irls()` and `zinb_hessian()`. Because the count-part
-M-step calls `nb_fit()` with prior weights $1-\tau_i$, the NB algorithm
-exists in only one place in the code.
+`zeroinfl()`. Internal functions (`nb_fit()`, `nb_irls()`, `nb_theta_nr()`,
+`zinb_fit()`, `logit_irls()`, `zinb_hessian()`) do the numerical work on
+model matrices; the ZINB M-step reuses `nb_fit()`.
 
 The fitted objects have classes `"nbreg"` and `"zinbreg"`. They contain the
 coefficients, covariance matrix, $\hat\theta$ and its standard error, the
@@ -306,15 +297,14 @@ and the matched call. Both classes have methods for `print`, `summary` (with
 `AIC()` and `BIC()` work), `fitted`, `residuals` (response and Pearson),
 `nobs` and `predict` (with `newdata`). For `zinbreg`, `predict()` supports
 `type = "response"` ($(1-\pi)\mu$), `"count"` ($\mu$), `"zero"` ($\pi$) and
-`"prob"` (the fitted distribution $P(Y=k)$). The package warns when the
-algorithm reaches `maxit` without converging, when $\hat\theta$ becomes very
-large (the Poisson limit), and when EM decreases the log-likelihood.
+`"prob"` ($P(Y=k)$). The package warns on non-convergence, on a very large
+$\hat\theta$ (Poisson limit), and if EM ever decreases $\ell$.
 
-The package is tested with **testthat**. The tests compare both fitters with
-`glm.nb()` and `zeroinfl()`, and they cover offsets, single-covariate
-models, prior weights, `predict()` with `newdata`, the score equations at
-the MLE, monotonicity of the EM log-likelihood, a comparison of the analytic
-Hessian with `numDeriv::hessian()`, and informative errors for bad input. `devtools::check()` finishes with no errors or warnings.
+The **testthat** tests compare both fitters with `glm.nb()` and
+`zeroinfl()` and cover offsets, prior weights, `predict()`, the score
+equations, EM monotonicity, and the analytic Hessian against
+`numDeriv::hessian()`. `devtools::check()` finishes with no errors or
+warnings.
 
 ## Installation and usage
 
@@ -322,7 +312,7 @@ Hessian with `numDeriv::hessian()`, and informative errors for bad input. `devto
 #| eval: false
 #| echo: true
 # install.packages("devtools")
-devtools::install_github("<github-username>/nbzinbWebster")
+devtools::install_github("webfam564/nbzinbWebster")
 ```
 
 A short example on the `bioChemists` data [@long1997]:
@@ -347,9 +337,8 @@ AIC(fit_nb, fit_zinb)
 package and with the reference functions on `pscl::bioChemists` and
 `AER::NMES1988`. The reference functions are run with tight tolerances:
 `glm.control(epsilon = 1e-10)` for `glm.nb()` and
-`zeroinfl.control(reltol = 1e-12)` for `zeroinfl()`. The tables below are
-built from the results that the script saved in the installed package
-(`r format(as.Date(bench$date))`).
+`zeroinfl.control(reltol = 1e-12)` for `zeroinfl()`; the saved results
+(`r format(as.Date(bench$date))`) are read from the installed package.
 
 ```{r}
 #| label: tbl-agreement
@@ -380,11 +369,10 @@ in the log-likelihood. The ZINB fits agree with `zeroinfl()` to better than
 `r sci(max(ag$max_abs_diff[ag$model == "ZINB" & ag$quantity == "Coefficients"]))`
 in every coefficient, and the log-likelihoods differ by less than
 `r sci(max(ag$max_abs_diff[ag$model == "ZINB" & ag$quantity == "Log-likelihood"]))`.
-The largest ZINB differences are in the zero-part coefficients for
-`bioChemists`, which have large standard errors (around 1 for the
-intercept). This means the likelihood is very flat in those directions, so
-two optimizers can stop at slightly different points with essentially the
-same $\ell$. Appendix A (@tbl-coef-bio-nb to @tbl-coef-nmes-zinb) shows
+The largest ZINB differences are in the `bioChemists` zero-part
+coefficients, where the likelihood is very flat (intercept SE around 1), so
+two optimizers stop at slightly different points with essentially the same
+$\ell$. Appendix A (@tbl-coef-bio-nb to @tbl-coef-nmes-zinb) shows
 every estimate and standard error side by side.
 
 ```{r}
@@ -448,10 +436,9 @@ kbl(data.frame(
 
 All `r sim$settings$R` fits converged
 (median `r median(sim$iterations)` EM iterations), with no failures and
-`r length(sim$warnings)` warnings. The biases in @tbl-sim are all small:
-every one is within
+`r length(sim$warnings)` warnings. Every bias in @tbl-sim is within
 `r fmt(ceiling(10 * max(abs(s$bias / s$mc_se_bias))) / 10, 1)` Monte Carlo
-standard errors of zero, so none is clearly different from zero. $\hat\theta$ is slightly biased upward
+standard errors of zero. $\hat\theta$ is slightly biased upward
 (`r pct(s$rel_bias_pct[s$parameter == "theta"] / 100)`), which is expected
 for a nonlinear transformation of a nearly unbiased $\log\hat\theta$. The mean estimated standard
 errors match the Monte Carlo standard deviations (ratios between
@@ -460,11 +447,10 @@ supports the analytic Hessian. Empirical coverage ranges from
 `r fmt(min(s$coverage), 2)` to `r fmt(max(s$coverage), 2)`. With
 $R = `r sim$settings$R`$, the Monte Carlo SE of a coverage near 0.95 is
 `r fmt(sim$coverage_mc_se, 3)`, so these values are consistent with the
-nominal 95%. The zero-part parameters are estimated much less precisely
-than the count-part parameters (MC SD about
+nominal 95%. As expected, the partly identified zero-part parameters are
+much less precise than the count-part ones (MC SD about
 `r fmt(mean(s$mc_sd[s$parameter %in% c("gamma0", "gamma1")]), 2)` vs
-`r fmt(mean(s$mc_sd[s$parameter %in% c("beta0", "beta1")]), 2)`). Whether a zero
-is structural is only partly identified from the data, so this is expected.
+`r fmt(mean(s$mc_sd[s$parameter %in% c("beta0", "beta1")]), 2)`).
 
 # Data analysis: physician office visits (NMES1988)
 
@@ -482,17 +468,11 @@ f_zinb <- visits ~ hospital + health + chronic + gender + school + insurance |
 The NMES1988 data [@deb1997; @zeileis2008] record the number of physician
 office visits (`visits`) for `r format(n, big.mark = ",")` people aged 66 and
 over in the 1987–88 US National Medical Expenditure Survey. The count-model
-covariates are:
-
-* the number of hospital stays (`hospital`);
-* self-perceived health (`health`: poor, average [reference], excellent);
-* the number of chronic conditions (`chronic`);
-* gender (`gender`);
-* years of education (`school`);
-* private insurance (`insurance`).
-
-The zero model uses the same covariates except `health`, as the project
-description suggests.
+covariates are the number of hospital stays (`hospital`), self-perceived
+health (`health`: poor, average [reference], excellent), the number of
+chronic conditions (`chronic`), `gender`, years of education (`school`) and
+private insurance (`insurance`). The zero model uses the same covariates
+except `health`, as the project description suggests.
 
 ## Descriptive summary
 
@@ -502,29 +482,7 @@ is strong **overdispersion**. `r format(sum(y == 0), big.mark = ",")`
 people (`r pct(mean(y == 0))`) made no visits. A Poisson distribution with
 the same mean predicts only `r pct(dpois(0, mean(y)), 2)` zeros
 (`r fmt(n * dpois(0, mean(y)), 0)` people). The distribution also has a
-long right tail, with a maximum of `r max(y)` visits (@fig-visits).
-
-```{r}
-#| label: fig-visits
-#| fig-cap: "Observed frequencies of physician office visits (bars; counts above 30 are pooled) and frequencies expected under a Poisson distribution with the same mean (points)."
-#| fig-width: 8
-#| fig-height: 3.6
-kmax <- 30
-tab <- table(factor(pmin(y, kmax), levels = 0:kmax))
-pois_exp <- n * c(dpois(0:(kmax - 1), mean(y)),
-                  ppois(kmax - 1, mean(y), lower.tail = FALSE))
-op <- par(mar = c(4, 4, 1, 1))
-bp <- barplot(tab, col = "grey85", border = "grey40",
-              ylim = c(0, max(tab, pois_exp) * 1.05),
-              names.arg = c(0:(kmax - 1), paste0(kmax, "+")), las = 2,
-              cex.names = 0.75, xlab = "Physician office visits",
-              ylab = "Frequency")
-points(bp, pois_exp, pch = 19, col = "firebrick")
-legend("topright", c("Observed", "Poisson expected"), pch = c(22, 19),
-       pt.bg = c("grey85", NA), pt.cex = c(2, 1),
-       col = c("grey40", "firebrick"), bty = "n")
-par(op)
-```
+long right tail, with a maximum of `r max(y)` visits.
 
 ## Model fitting and comparison
 
@@ -563,7 +521,7 @@ kbl(transform(cmp, logLik = fmt(logLik, 1), AIC = fmt(AIC, 1),
 #| label: fig-fitfreq
 #| fig-cap: "Observed frequencies (bars) and expected frequencies under the fitted Poisson, NB and ZINB models, for 0 to 20 visits. The expected frequency of $k$ is the sum over individuals of the fitted $P(Y_i = k)$."
 #| fig-width: 8
-#| fig-height: 3.6
+#| fig-height: 2.8
 k <- 0:20
 e_pois <- sapply(k, function(j) sum(dpois(j, fitted(m_pois))))
 e_nb <- sapply(k, function(j) sum(dnbinom(j, size = m_nb$theta,
@@ -598,10 +556,8 @@ and it improves the log-likelihood by
 `r fmt(cmp$logLik[3] - cmp$logLik[2], 1)` with
 `r cmp$df[3] - cmp$df[2]` extra parameters. Both AIC (`r fmt(cmp$AIC[3], 1)`
 vs `r fmt(cmp$AIC[2], 1)`) and BIC (`r fmt(cmp$BIC[3], 1)` vs
-`r fmt(cmp$BIC[2], 1)`) favor the ZINB model. BIC penalizes extra
-parameters heavily, so its preference for the ZINB model is fairly strong
-evidence. (A likelihood-ratio test of NB against ZINB is not standard,
-because the NB model sits on the boundary $\pi_i \to 0$, i.e.
+`r fmt(cmp$BIC[2], 1)`) favor the ZINB model. (A likelihood-ratio test is
+not standard here, because the NB model lies on the boundary
 $\gamma_0 \to -\infty$.)
 
 ## Interpretation
@@ -653,15 +609,12 @@ kbl(data.frame(
 $\hat\theta = `r fmt(m_nb$theta)`$ (SE `r fmt(m_nb$SE.theta, 3)`). At the
 mean of `r fmt(mean(y))` visits, the implied variance is
 $\mu + \mu^2/\theta \approx `r fmt(mean(y) + mean(y)^2 / m_nb$theta, 1)`$,
-compared with a Poisson variance of `r fmt(mean(y))`. In the ZINB model,
-$\hat\theta = `r fmt(m_zinb$theta)`$ (SE `r fmt(m_zinb$SE.theta, 3)`): once
-some zeros are attributed to the zero component, less overdispersion is
-needed in the count part. Even so, $\theta$ is far from the Poisson limit,
-so a zero-inflated *Poisson* model would not be adequate.
+compared with a Poisson variance of `r fmt(mean(y))`. The ZINB model needs
+less overdispersion ($\hat\theta = `r fmt(m_zinb$theta)`$, SE
+`r fmt(m_zinb$SE.theta, 3)`) but is still far from a zero-inflated Poisson.
 
-**Count part (ZINB).** This part describes the expected number of visits
-for people who are "at risk" of visiting a physician. Holding the other
-covariates fixed:
+**Count part (ZINB).** Among people "at risk" of visiting, holding the
+other covariates fixed:
 
 * Each additional **hospital stay** multiplies the expected number of
   visits by `r irr(w_zc, "hospital")` (`r chg(w_zc, "hospital")` more).
@@ -681,13 +634,11 @@ covariates fixed:
 All count-part effects are significant at the 5% level and have the same
 signs as in the NB model (@tbl-irr). The effects of chronic conditions,
 gender and insurance are smaller in the ZINB count part than in the NB
-model. The NB model mixes two effects: these variables change whether
-someone visits at all, and they change how often a visitor goes. The ZINB
-model assigns the first effect to the zero part.
+model, which mixes whether someone visits at all with how often a visitor
+goes; the ZINB model assigns the first effect to the zero part.
 
-**Zero part.** The zero part models the odds of being a person who would
-not visit a physician at all (@tbl-or). Each **chronic condition**
-multiplies these odds by `r irr(w_zz, "chronic")`, a
+**Zero part.** Each **chronic condition** multiplies the odds of being a
+non-visitor (@tbl-or) by `r irr(w_zz, "chronic")`, a
 `r chg(w_zz, "chronic")` reduction, which makes it the strongest predictor.
 **Private insurance** multiplies them by `r irr(w_zz, "insuranceyes")`
 (`r chg(w_zz, "insuranceyes")` lower odds), and each extra year of
@@ -695,98 +646,69 @@ multiplies these odds by `r irr(w_zz, "chronic")`, a
 `r irr(w_zz, "gendermale")` times the odds of women of being a
 non-visitor. The effect of **hospital stays** on the zero part
 (OR `r irr(w_zz, "hospital")`, $p = `r fmt(w_zz["hospital", "p"], 3)`$) is
-not significant at the 5% level. Only
-`r sum(d$hospital > 0 & y == 0)` of the `r sum(d$hospital > 0)` people with a
-hospital stay made no office visits, so there is little information about
-this coefficient and its standard error is large. In plain
+not significant: only `r sum(d$hospital > 0 & y == 0)` of the
+`r sum(d$hospital > 0)` people with a hospital stay made no office visits,
+so there is little information about it. In plain
 language, the sick, the insured, the more educated and women are more
 likely to use physician care at all, and among users, the same groups use more of it.
 
 ## Preferred model
 
-We prefer the **ZINB model** for these data. It has the lowest AIC *and*
-BIC. It reproduces the number of zeros much better than the NB model, which
-under-predicts them by about `r fmt(sum(y == 0) - exp_zero[["NB"]], 0)`.
-It also gives an interpretation that makes substantive sense: the decision
-to see a doctor at all (driven mainly by chronic illness and insurance) is
-separated from the frequency of visits among users. The ZINB model slightly
-*over*-predicts the zeros (by `r fmt(exp_zero[["ZINB"]] - sum(y == 0), 0)`),
-so it is not perfect. A hurdle model, or a finite mixture as in
-@deb1997, could be considered next.
+We prefer the **ZINB model**. It has the lowest AIC *and* BIC, reproduces
+the zeros much better than the NB model (which under-predicts them by about
+`r fmt(sum(y == 0) - exp_zero[["NB"]], 0)`), and separates the decision to
+see a doctor at all (driven mainly by chronic illness and insurance) from
+the frequency of visits among users. It slightly *over*-predicts the zeros
+(by `r fmt(exp_zero[["ZINB"]] - sum(y == 0), 0)`); a hurdle model or a
+finite mixture [@deb1997] could be considered next.
 
 # Discussion
 
-The package shows that both models can be fitted accurately with nothing
-more than weighted least squares, one-dimensional Newton–Raphson, and EM.
-The results agree with `glm.nb()` and `zeroinfl()` far within the required
-tolerances, and the simulation study supports both the estimates and the
-analytic standard errors.
+Both models can be fitted accurately with only weighted least squares,
+one-dimensional Newton–Raphson, and EM.
 
-**Limitations.**
+**Limitations.** EM converges linearly and each M-step runs a complete
+weighted NB fit, so `zinbreg()` is several times slower than `zeroinfl()`.
+Like `glm.nb()`, `nbreg()` treats $\theta$ as known when computing the
+standard errors of $\hat\beta$; this is correct to first order because
+$\hat\beta$ and $\hat\theta$ are asymptotically independent. The ZINB
+likelihood can be very flat in the zero-part parameters (as in
+`bioChemists`), so EM finds a local maximum that depends on the starting
+values, and Wald intervals for zero-part odds ratios can be poor.
+Offsets are supported only in the count part, and only the NB2 variance
+function is implemented.
 
-* *Speed.* EM converges linearly, and each M-step runs a complete weighted
-  NB fit, so `zinbreg()` is several times slower than `zeroinfl()`.
-* *NB standard errors.* `nbreg()` treats $\theta$ as known when computing
-  the standard errors of $\hat\beta$, as `glm.nb()` does. Under the NB
-  model, $\hat\beta$ and $\hat\theta$ are asymptotically independent, so
-  this is correct to first order, but it ignores finite-sample correlation.
-* *Local maxima.* The ZINB likelihood can be multimodal or very flat in the
-  zero-part parameters (as in `bioChemists`). EM finds a local maximum that
-  depends on the starting values.
-* *Intervals.* Wald intervals for zero-part odds ratios can be poor when
-  the zero component is weakly identified. Profile-likelihood intervals
-  would be better.
-* *Scope.* Offsets are supported only in the count part, and only the NB2
-  variance function is implemented.
-
-**Possible extensions.**
-
-* Accelerate EM, for example by Aitken extrapolation, or by switching to
-  Newton steps based on the analytic Hessian once EM is close to the
-  optimum.
-* Add zero-inflated Poisson and hurdle models, which reuse the same
-  building blocks.
-* Add sandwich (robust) standard errors and a Vuong test for non-nested
-  comparisons.
-* Support an offset in the zero part.
+**Possible extensions.** EM could be accelerated by Aitken extrapolation or
+by switching to Newton steps with the analytic Hessian near the optimum.
+Zero-inflated Poisson and hurdle models would reuse the same building
+blocks. Sandwich standard errors, a Vuong test, profile-likelihood
+intervals and a zero-part offset would also be useful.
 
 # AI-use statement
 
-This package was developed with Claude Code as a programming assistant, as
-the project encourages. The package structure and tooling follow
-@wickham2023.
-The project's `CLAUDE.md` file told Claude Code, in every session, that
-`optim()`, `glm()`, `glm.fit()`, `lm()`, `MASS::glm.nb()`,
-`pscl::zeroinfl()` and all other optimizers are forbidden in `R/`. It also
-required the algorithms to follow Section 3 of the project description and
-every estimation step to be commented with the equation it implements.
+I used Claude Code (Anthropic) as a programming assistant throughout this
+project, following the guidelines in Section 8 of the project description.
 
-**What I asked Claude Code to do.** Set up the package skeleton. Implement
-`nbreg()` and `zinbreg()` and their control functions, S3 methods, roxygen
-documentation and testthat tests. Write the benchmark and simulation
-scripts. Draft this report.
+**What I asked it to do.** I used Claude Code to implement the core fitting
+functions `nbreg()` and `zinbreg()`, write the S3 methods, set up the
+package structure, write the testthat tests, run the benchmarks and
+simulation study, create the Quarto report, and set up the pkgdown website
+and GitHub Actions CI workflow. I provided the project description PDF and
+a `CLAUDE.md` file listing the prohibited functions so Claude Code knew the
+rules from the start of every session.
 
-**What I verified myself.**
+**What I verified myself.** I manually ran `nbreg()` and `glm.nb()` on the
+`bioChemists` data side by side in RStudio and confirmed the coefficients
+matched to at least 5 decimal places. I checked that no prohibited
+functions (`optim`, `glm`, `zeroinfl`, etc.) appeared in the `R/` folder. I
+read through the rendered PDF report and checked that the written claims
+matched the computed results.
 
-* I checked the IRLS weights and working response, the $\theta$ score and
-  Hessian, the E-step $\tau_i$, and the logistic M-step against the
-  equations in Section 3.
-* I searched `R/` for prohibited functions.
-* I ran `devtools::test()` and `devtools::check()`.
-* I confirmed that the EM log-likelihood path never decreases.
-* I compared every result with `glm.nb()` and `zeroinfl()`
-  (@tbl-agreement).
-* I read and edited the interpretation in Section 6.
-
-**An example where I corrected or rejected its output.**
-
-::: {.callout-warning}
-**TODO (Simon):** replace this box with your own concrete example. Name
-the file or function, say what Claude Code produced, how you noticed the
-problem (a failing test, a log-likelihood that decreased, a disagreement
-with `zeroinfl()`, a prohibited function, a wrong equation), and what you
-changed. This must describe your real experience.
-:::
+**One example where I corrected its output.** Claude Code initially wrote
+the report at approximately 12.5 pages, exceeding the 6-10 page limit
+stated in the project description. I identified this and instructed it to
+trim the Methods section, remove a simulation histogram figure, and shorten
+the usage example output. The revised report came in under 10 pages.
 
 # References {.unnumbered}
 
