@@ -607,8 +607,8 @@ checked that the written claims matched the computed results.
 wrote the report at approximately 12.5 pages, exceeding the 6-10 page
 limit stated in the project description. I identified this and
 instructed it to trim the Methods section, remove a simulation histogram
-figure, and shorten the usage example output. The revised report came in
-under 10 pages.
+figure, and shorten the usage example output. When three cuts were not
+enough, I had it cut further until the body was exactly 10 pages.
 
 ## References
 
