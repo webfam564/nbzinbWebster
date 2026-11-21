@@ -5,6 +5,7 @@ Authors@R:
     person("Simon", "Webster", , "webstes7@miamioh.edu", role = c("aut", "cre"))
 Description: Fits negative binomial (NB2) regression models by iteratively reweighted least squares for the coefficients alternated with Newton-Raphson for the dispersion parameter, and zero-inflated negative binomial models by an EM algorithm with IRLS M-steps. No general-purpose optimizer is used.
 License: MIT + file LICENSE
+URL: https://webfam564.github.io/nbzinbWebster/
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
