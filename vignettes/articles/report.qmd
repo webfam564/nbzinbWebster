@@ -262,31 +262,15 @@ useful debugging tool during development.
 **Standard errors.** EM does not produce standard errors, so we invert the
 observed information matrix of @eq-zinb-ll with respect to
 $\psi = (\beta,\gamma,\phi)$, where $\phi=\log\theta$. The Hessian is
-computed **analytically**. Each $\ell_i$ depends on $\beta$ only through
-$\eta_i$ and on $\gamma$ only through $\zeta_i = z_i^\top\gamma$, so
-
-$$
-\frac{\partial^2\ell}{\partial\beta\,\partial\beta^\top}
-  = \sum_i a_i h^{\eta\eta}_i x_i x_i^\top,\quad
-\frac{\partial^2\ell}{\partial\beta\,\partial\gamma^\top}
-  = \sum_i a_i h^{\eta\zeta}_i x_i z_i^\top,\quad
-\frac{\partial^2\ell}{\partial\beta\,\partial\phi}
-  = \sum_i a_i h^{\eta\phi}_i x_i,\ \dots
-$$
-
-where $h^{jk}_i$ are the second derivatives of $\ell_i$ with respect to the
-scalars $(\eta_i,\zeta_i,\phi)$. For $y_i>0$ these have simple closed forms,
-for example $h^{\eta\eta}_i = -\theta\mu_i(\theta+y_i)/(\theta+\mu_i)^2$,
-$h^{\zeta\zeta}_i = -\pi_i(1-\pi_i)$ and $h^{\eta\zeta}_i = 0$. For
-$y_i=0$, $\ell_i = \log p_{0i}$ with $p_{0i} = \pi_i+(1-\pi_i)f_{NB}(0)$,
-and $h^{jk}_i = \partial_{jk}p_{0i}/p_{0i}
-- \partial_j p_{0i}\,\partial_k p_{0i}/p_{0i}^2$. The derivatives of
-$p_{0i}$ follow from those of $\log f_{NB}(0) = \theta\{\log\theta -
-\log(\theta+\mu_i)\}$. Then
-$\widehat{\operatorname{Var}}(\hat\psi) = \{-\nabla^2\ell(\hat\psi)\}^{-1}$,
-and $\operatorname{SE}(\hat\theta) = \hat\theta\,\operatorname{SE}(\log
-\hat\theta)$ by the delta method. As in `zeroinfl()`, $\log\theta$ is
-reported with its standard error.
+computed **analytically**: each $\ell_i$ depends on the parameters only
+through the scalars $\eta_i$, $\zeta_i = z_i^\top\gamma$ and $\phi$, so every
+block is a weighted cross-product such as
+$\partial^2\ell/\partial\beta\,\partial\gamma^\top
+= \sum_i a_i h^{\eta\zeta}_i x_i z_i^\top$, where $h^{\eta\zeta}_i$ is a
+scalar second derivative of $\ell_i$ with a closed form. Then
+$\widehat{\operatorname{Var}}(\hat\psi) = \{-\nabla^2\ell(\hat\psi)\}^{-1}$
+and, by the delta method,
+$\operatorname{SE}(\hat\theta) = \hat\theta\,\operatorname{SE}(\log\hat\theta)$.
 
 # The R package
 
@@ -345,6 +329,7 @@ A short example on the `bioChemists` data [@long1997]:
 
 ```{r}
 #| echo: true
+#| eval: false
 library(nbzinbWebster)
 data("bioChemists", package = "pscl")
 fit_nb <- nbreg(art ~ fem + mar + kid5 + phd + ment, data = bioChemists)
@@ -461,24 +446,6 @@ kbl(data.frame(
   check.names = FALSE), row.names = FALSE, align = "lrrrrrrr")
 ```
 
-```{r}
-#| label: fig-sim
-#| fig-cap: "Sampling distributions of the estimates over the simulated data sets. Red lines mark the true values."
-#| fig-width: 8
-#| fig-height: 4.2
-est <- sim$estimates
-true_ext <- setNames(s$true, s$parameter)
-op <- par(mfrow = c(2, 3), mar = c(4, 3, 2, 1), mgp = c(2, 0.7, 0))
-for (p in s$parameter) {
-  hist(est[, p], breaks = 15, col = "grey85", border = "grey40",
-       main = "", xlab = parse(text = c(beta0 = "beta[0]", beta1 = "beta[1]",
-         gamma0 = "gamma[0]", gamma1 = "gamma[1]",
-         log_theta = "log(theta)", theta = "theta")[[p]]), ylab = "")
-  abline(v = true_ext[[p]], col = "firebrick", lwd = 2)
-}
-par(op)
-```
-
 All `r sim$settings$R` fits converged
 (median `r median(sim$iterations)` EM iterations), with no failures and
 `r length(sim$warnings)` warnings. The biases in @tbl-sim are all small:
@@ -486,8 +453,7 @@ every one is within
 `r fmt(ceiling(10 * max(abs(s$bias / s$mc_se_bias))) / 10, 1)` Monte Carlo
 standard errors of zero, so none is clearly different from zero. $\hat\theta$ is slightly biased upward
 (`r pct(s$rel_bias_pct[s$parameter == "theta"] / 100)`), which is expected
-for a nonlinear transformation of a nearly unbiased $\log\hat\theta$, and
-its distribution is right-skewed (@fig-sim). The mean estimated standard
+for a nonlinear transformation of a nearly unbiased $\log\hat\theta$. The mean estimated standard
 errors match the Monte Carlo standard deviations (ratios between
 `r fmt(min(s$se_ratio), 2)` and `r fmt(max(s$se_ratio), 2)`), which
 supports the analytic Hessian. Empirical coverage ranges from
