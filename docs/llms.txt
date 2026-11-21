@@ -25,7 +25,9 @@ This package is the STA 651 (Fall 2026) final project of Simon Webster.
 
 - Website: <https://webfam564.github.io/nbzinbWebster/>
 - Report:
-  [`report/report.pdf`](https://webfam564.github.io/nbzinbWebster/report/report.pdf)
+  [PDF](https://github.com/webfam564/nbzinbWebster/blob/master/report/report.pdf)
+  (also on the website as the [Report
+  article](https://webfam564.github.io/nbzinbWebster/articles/report.html))
 
 ## Installation
 
